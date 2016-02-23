@@ -5,6 +5,7 @@
 const Code = require('code');
 const Hapi = require('hapi');
 const Lab = require('lab');
+const Vision = require('vision');
 const Chairo = require('../');
 
 // Declare internals
@@ -41,7 +42,79 @@ describe('register()', () => {
 
             server.seneca.act({ generate: 'id' }, (err, result) => {
 
+                expect(err).to.not.exist();
                 expect(result).to.deep.equal({ id: 1 });
+                done();
+            });
+        });
+    });
+
+    it('load custom web plugin if provided in options', (done) => {
+
+        const web = function () {
+
+            return {
+                name: 'web',
+                exportmap: {
+                    hapi: function (server, options, next) {
+
+                        expect(server).to.exist();
+                        expect(options).to.exist();
+                        expect(options.someOption).to.equal('someValue');
+                        server.seneca.close();
+                        done();
+                    }
+                }
+            };
+        };
+
+        const setupServer = function () {
+
+            const server = new Hapi.Server();
+            server.connection();
+            server.register([
+                {
+                    register: Chairo,
+                    options: {
+                        someOption: 'someValue',
+                        web: web
+                    }
+                }], (err) => {
+
+                expect(err).to.not.exist();
+            });
+        };
+
+        setupServer();
+    });
+
+    it('disables seneca-web plugin if specified in options', (done) => {
+
+        const server = new Hapi.Server();
+        server.connection();
+        server.register({ register: Chairo, options: { web: false } }, (err) => {
+
+            expect(err).to.not.exist();
+
+            server.seneca.act({ role: 'web' }, (err) => {
+
+                expect(err).to.exist();
+                done();
+            });
+        });
+    });
+
+    it('enables seneca-web plugin if specified in options', (done) => {
+
+        const server = new Hapi.Server();
+        server.connection();
+        server.register({ register: Chairo, options: { web: true } }, (err) => {
+
+            expect(err).to.not.exist();
+
+            server.seneca.act({ role: 'web' }, (err) => {
+
+                expect(err).to.not.exist();
                 done();
             });
         });
@@ -68,10 +141,12 @@ describe('action()', () => {
 
             server.methods.generate((err, result) => {
 
+                expect(err).to.not.exist();
                 expect(result).to.deep.equal({ id: 1 });
 
                 server.methods.generate((err, result2) => {
 
+                    expect(err).to.not.exist();
                     expect(result2).to.deep.equal({ id: 2 });
                     done();
                 });
@@ -99,15 +174,42 @@ describe('action()', () => {
 
                 server.methods.generate((err, result1) => {
 
+                    expect(err).to.not.exist();
                     expect(result1).to.deep.equal({ id: 1 });
 
                     server.methods.generate((err, result2) => {
 
+                        expect(err).to.not.exist();
                         expect(result2).to.deep.equal({ id: 1 });
                         done();
                     });
                 });
             });
+        });
+    });
+
+    it('throws an exception for invalid cache options', (done) => {
+
+        const server = new Hapi.Server();
+        server.connection();
+        server.register({ register: Chairo }, (err) => {
+
+            expect(err).to.not.exist();
+
+            let id = 0;
+            server.seneca.add({ generate: 'id' }, (message, next) => {
+
+                return next(null, { id: ++id });
+            });
+
+            const incorrect = function () {
+
+                server.action('generate', 'generate:id', []);
+            };
+
+            expect(incorrect).to.throw(Error);
+
+            done();
         });
     });
 
@@ -164,6 +266,7 @@ describe('action()', () => {
 
             server.methods.generate((err, result) => {
 
+                expect(err).to.not.exist();
                 expect(result).to.deep.equal({ id: 1 });
                 done();
             });
@@ -187,6 +290,7 @@ describe('action()', () => {
 
             server.methods.generate('name:steve', (err, result) => {
 
+                expect(err).to.not.exist();
                 expect(result).to.deep.equal({ id: 1, name: 'steve' });
                 done();
             });
@@ -210,6 +314,7 @@ describe('action()', () => {
 
             server.methods.generate({ name: 'steve' }, (err, result) => {
 
+                expect(err).to.not.exist();
                 expect(result).to.deep.equal({ id: 1, name: 'steve' });
                 done();
             });
@@ -236,10 +341,12 @@ describe('action()', () => {
 
                 server.methods.generate('name:steve', (err, result1) => {
 
+                    expect(err).to.not.exist();
                     expect(result1.id).to.equal(1);
 
                     server.methods.generate('name:steve', (err, result2) => {
 
+                        expect(err).to.not.exist();
                         expect(result1.id).to.equal(1);
                         done();
                     });
@@ -268,10 +375,12 @@ describe('action()', () => {
 
                 server.methods.generate({ name: 'steve' }, (err, result1) => {
 
+                    expect(err).to.not.exist();
                     expect(result1.id).to.equal(1);
 
                     server.methods.generate({ name: 'steve' }, (err, result2) => {
 
+                        expect(err).to.not.exist();
                         expect(result1.id).to.equal(1);
                         done();
                     });
@@ -300,10 +409,12 @@ describe('action()', () => {
 
                 server.methods.generate({ name: 'steve', pre: 'mr' }, (err, result1) => {
 
+                    expect(err).to.not.exist();
                     expect(result1.id).to.equal(1);
 
                     server.methods.generate({ name: 'steve', pre: 'mr' }, (err, result2) => {
 
+                        expect(err).to.not.exist();
                         expect(result1.id).to.equal(1);
                         done();
                     });
@@ -332,10 +443,12 @@ describe('action()', () => {
 
                 server.methods.generate({ name: 'steve', pre: 'mr' }, (err, result1) => {
 
+                    expect(err).to.not.exist();
                     expect(result1.id).to.equal(1);
 
                     server.methods.generate('name:steve,pre:mr', (err, result2) => {
 
+                        expect(err).to.not.exist();
                         expect(result1.id).to.equal(1);
                         done();
                     });
@@ -364,6 +477,7 @@ describe('action()', () => {
 
                 server.methods.generate({ price: { a: 'b' } }, (err, result) => {
 
+                    expect(err).to.exist();
                     expect(result).to.not.exist();
                     done();
                 });
@@ -444,11 +558,11 @@ describe('Replies', () => {
 
     describe('compose()', () => {
 
-        it('renders view using multiple actions', (done) => {
+        it('renders view from a template', (done) => {
 
             const server = new Hapi.Server();
             server.connection();
-            server.register([{ register: Chairo }, require('vision')], (err) => {
+            server.register([{ register: Chairo }, Vision], (err) => {
 
                 expect(err).to.not.exist();
 
@@ -473,8 +587,63 @@ describe('Replies', () => {
                     handler: (request, reply) => {
 
                         const context = {
-                            id$: 'generate:id',
-                            user$: { record: 'user', name: 'john' },
+                            user: {
+                                id: {
+                                    id: 1
+                                },
+                                name: {
+                                    name: 'john'
+                                }
+                            },
+                            general: {
+                                message: 'hello!'
+                            }
+                        };
+
+                        return reply.compose('test', context);
+                    }
+                });
+                server.inject('/', (res) => {
+
+                    expect(res.result).to.equal('<div>\n    <h1>1</h1>\n    <h2>john</h2>\n    <h3>hello!</h3>\n</div>\n');
+                    done();
+                });
+            });
+        });
+
+        it('renders view using multiple actions', (done) => {
+
+            const server = new Hapi.Server();
+            server.connection();
+            server.register([{ register: Chairo }, Vision], (err) => {
+
+                expect(err).to.not.exist();
+
+                server.seneca.add({ generate: 'id' }, (message, next) => {
+
+                    return next(null, { id: 1 });
+                });
+
+                server.seneca.add({ record: 'user' }, (message, next) => {
+
+                    return next(null, { name: message.name });
+                });
+
+                server.views({
+                    engines: { html: require('handlebars') },
+                    path: __dirname + '/templates'
+                });
+
+                server.route({
+                    method: 'GET',
+                    path: '/',
+                    handler: (request, reply) => {
+
+                        const context = {
+                            $resolve: {
+                                'user.id': 'generate:id',
+                                'user.name': { record: 'user', name: 'john' }
+                            },
                             general: {
                                 message: 'hello!'
                             }
@@ -496,7 +665,7 @@ describe('Replies', () => {
 
             const server = new Hapi.Server();
             server.connection();
-            server.register([{ register: Chairo }, require('vision')], (err) => {
+            server.register([{ register: Chairo }, Vision], (err) => {
 
                 expect(err).to.not.exist();
 
@@ -516,8 +685,10 @@ describe('Replies', () => {
                     handler: (request, reply) => {
 
                         const context = {
-                            id$: 'generate:id',
-                            user$: { record: 'user', name: 'john' },
+                            $resolve: {
+                                'user.id': 'generate:id',
+                                'user.name': { record: 'user', name: 'john' }
+                            },
                             general: {
                                 message: 'hello!'
                             }
@@ -545,7 +716,7 @@ describe('Handlers', () => {
 
             const server = new Hapi.Server();
             server.connection();
-            server.register([{ register: Chairo }, require('vision')], (err) => {
+            server.register([{ register: Chairo }, Vision], (err) => {
 
                 expect(err).to.not.exist();
 
@@ -596,7 +767,7 @@ describe('Handlers', () => {
 
             const server = new Hapi.Server();
             server.connection();
-            server.register([{ register: Chairo }, require('vision')], (err) => {
+            server.register([{ register: Chairo }, Vision], (err) => {
 
                 expect(err).to.not.exist();
 
@@ -622,8 +793,10 @@ describe('Handlers', () => {
                         compose: {
                             template: 'test',
                             context: {
-                                id$: 'generate:id',
-                                user$: { record: 'user', name: 'john' },
+                                $resolve: {
+                                    'user.id': 'generate:id',
+                                    'user.name': { record: 'user', name: 'john' }
+                                },
                                 general: {
                                     message: 'hello!'
                                 }
@@ -637,6 +810,59 @@ describe('Handlers', () => {
                     expect(res.result).to.equal('<div>\n    <h1>1</h1>\n    <h2>john</h2>\n    <h3>hello!</h3>\n</div>\n');
                     done();
                 });
+            });
+        });
+    });
+
+    it('can access payload in seneca action', (done) => {
+
+        const server = new Hapi.Server();
+        server.connection();
+        server.register([Chairo, Vision], (err) => {
+
+            expect(err).to.not.exist();
+
+            server.seneca.add({ get: 'request' }, (message, next) => {
+
+                expect(message.req$.payload).to.deep.equal({ some: 'data', another: 'data' });
+                return next(null, { id: 1 });
+            });
+
+            server.route({ method: 'POST', path: '/', handler: { act: { get: 'request' } } });
+
+            server.inject({ method: 'POST', url: '/', payload: { some: 'data', another: 'data' } }, (res) => {
+
+                expect(res.statusCode).to.equal(200);
+                expect(res.result).to.deep.equal({ id: 1 });
+                server.seneca.close();
+                done();
+            });
+        });
+    });
+
+
+    it('can access query parameters in seneca action', (done) => {
+
+        const server = new Hapi.Server();
+        server.connection();
+        server.register([Chairo, Vision], (err) => {
+
+            expect(err).to.not.exist();
+
+            server.seneca.add({ verify: 'request' }, (message, next) => {
+
+                expect(message.req$.query).to.deep.equal({ some: 'action' });
+                return next(null, { id: 1 });
+            });
+
+            server.route({ method: 'GET', path: '/route', handler: { act: { verify: 'request' } } });
+
+            server.inject({ method: 'GET', url: '/route?some=action' }, (res) => {
+
+                expect(res.statusCode).to.equal(200);
+                expect(res.result).to.deep.equal({ id: 1 });
+                server.seneca.close();
+                done();
             });
         });
     });
