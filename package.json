@@ -11,7 +11,7 @@
     "seneca"
   ],
   "engines": {
-    "node": ">=4.0.0"
+    "node": ">=0.10.0"
   },
   "dependencies": {
     "boom": "2.x.x",
@@ -23,12 +23,12 @@
     "vision": "3.x.x"
   },
   "peerDependencies": {
-    "hapi": ">=11.x.x"
+    "hapi": ">=8.5.x"
   },
   "devDependencies": {
     "code": "1.x.x",
     "handlebars": "4.0.x",
-    "hapi": ">8.5.x",
+    "hapi": ">=8.5.x",
     "lab": "5.x.x"
   },
   "scripts": {
