@@ -19,7 +19,7 @@
     "items": "1.x.x",
     "joi": "6.x.x",
     "jsonic": "0.1.x",
-    "seneca": "0.7.x",
+    "seneca": "1.2.x",
     "vision": "3.x.x"
   },
   "peerDependencies": {
